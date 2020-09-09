@@ -2,13 +2,17 @@
 
 Данный набор файлов конфигураций для Nginx содержит best practices из различных источников, включая [WordPress Codex](https://codex.wordpress.org/Nginx) и [H5BP](https://github.com/h5bp/server-configs-nginx).
 
-The following example sites are included:
+Ввиду требований современных браузеров будем считать, что SSL-сертификат и HTTPS перенаправление обязательны (хотя бы простой Lets Encrypt, который можно получить бесплатно). Включены следующие примеры конфигураций для сайтов и приложений:
 
-- [multisite-subdirectory.com](sites-available/multisite-subdirectory.com) - WordPress multisite install using subdirectories
-- [multisite-subdomain.com](sites-available/multisite-subdomain.com) - WordPress multisite install using subdomains
-- [single-site.com](sites-available/single-site.com) - WordPress single site install
-- [single-site-with-caching.com](sites-available/single-site-with-caching.com) - WordPress single site install with FastCGI caching
-- [single-site-no-ssl.com](sites-available/single-site-no-ssl.com) - WordPress single site install (no SSL or page caching)
+- [wikijs.conf](sites-available/wikijs.conf) - конфигурация для WikiJS
+- [ghost.conf](sites-available/ghost.conf) - конфигурация для GhostCMS
+- [django.conf](sites-available/django.conf) - конфигурация для Django
+- [wp-multisite-subdirectory.conf](sites-available/wp-multisite-subdirectory.conf) - WordPress multisite с использованием поддиректорий
+
+- [wp-multisite-subdomain.conf](sites-available/wp-multisite-subdomain.conf) - WordPress multisite с использованием поддоменов
+
+- [wp-single-site.conf](sites-available/wp-single-site.conf) - WordPress стандартный одиночный сайт
+- [wp-single-site-with-caching.conf](sites-available/wp-single-site-with-caching.conf) - WordPress сайт с использованием кэша FastCGI
 
 ## Usage
 
