@@ -1,4 +1,4 @@
-# Конфигурация WordPress Nginx
+# Конфигурация Nginx для Ghost CMS, Wordpress CMS, WikiJS и Django Framework
 
 Данный набор файлов конфигураций для Nginx содержит best practices из различных источников, включая [WordPress Codex](https://codex.wordpress.org/Nginx) и [H5BP](https://github.com/h5bp/server-configs-nginx).
 
@@ -12,6 +12,7 @@
 - [wp-multisite-subdomain.conf](sites-available/wp-multisite-subdomain.conf) - WordPress multisite с использованием поддоменов
 
 - [wp-single-site.conf](sites-available/wp-single-site.conf) - WordPress стандартный одиночный сайт
+
 - [wp-single-site-with-caching.conf](sites-available/wp-single-site-with-caching.conf) - WordPress сайт с использованием кэша FastCGI
 
 ## Usage
