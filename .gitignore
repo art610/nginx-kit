@@ -1,6 +1,6 @@
 dhparam.pem
-/html/*
 koi-utf
 koi-win
 win-utf
-
+/html/*
+/sites-enabled/*
