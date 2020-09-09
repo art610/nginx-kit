@@ -1,6 +1,6 @@
 # Конфигурация Nginx для Ghost CMS, Wordpress CMS, WikiJS и Django Framework
 
-Данный набор файлов конфигураций для Nginx содержит best practices из различных источников, включая [WordPress Codex](https://codex.wordpress.org/Nginx) и [H5BP](https://github.com/h5bp/server-configs-nginx).
+Данный набор файлов конфигураций для Nginx содержит используемые и редактированные мной конфигурации в ходе работы с указанными системами, а также best practices из различных источников, включая [WordPress Codex](https://codex.wordpress.org/Nginx) и [H5BP](https://github.com/h5bp/server-configs-nginx).
 
 Ввиду требований современных браузеров будем считать, что SSL-сертификат и HTTPS перенаправление обязательны (хотя бы простой Lets Encrypt, который можно получить бесплатно). Включены следующие примеры конфигураций для сайтов и приложений:
 
