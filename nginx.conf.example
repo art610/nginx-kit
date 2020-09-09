@@ -1,55 +1,285 @@
-# The user account used by the worker processes. If following along with Hosting WordPress Yourself,
-# it's recommened to set this to your username, but only when running a single user access server.
-# https://deliciousbrains.com/hosting-wordpress-yourself-nginx-php-mysql/
-user www-data;
+## ============================================================================
+# Common config
+## ----------------------------------------------------------------------------
+##
 
-# Set to number of CPU cores, auto will try to autodetect.
-worker_processes auto;
+# The user account used by the worker processes.
+user  www-data;   # For example, user  nobody;
 
-# Maximum open file descriptors per process. Should be greater than worker_connections.
-worker_rlimit_nofile 8192;
-
-# File that stores the process ID. Rarely needs changing.
+# Set to number of CPU cores or autodetect.
+worker_processes  auto;
+# Maximum open_files descriptors per process.
+# Should be greater then worker_connections.
+worker_rlimit_nofile 4520093;
+# File that stores the process ID.
 pid /run/nginx.pid;
 
+#error_log  logs/error.log;
+#error_log  logs/error.log  notice;
+#error_log  logs/error.log  info;
+
+include /etc/nginx/modules-enabled/*.conf;
+
+## ============================================================================
+# Events Config
+## ----------------------------------------------------------------------------
+##
+
 events {
-	# Set the maximum number of connection each worker process can open. Anything higher than this
-	# will require Unix optimisations.
-	worker_connections 8000;
+    # Set the max number of connection for each worker process
+    worker_connections  4194304;
+    #
+    use epoll;
+    # Accept all new connections as they're opened.
+    multi_accept on;
 
-	# Accept all new connections as they're opened.
-	multi_accept on;
 }
 
+
+## ============================================================================
+# HTTP Config
+## ----------------------------------------------------------------------------
+##
 http {
-	# HTTP
-	include global/http.conf;
+        ##
+        # Basic Settings
+        ##
+        # Speed up file transfer by using sendfile().
+        # Copies data between one FD and other from within the kernel.
+        # That's faster than read() + write().
+        sendfile on;
+        # Set max size of chunk of sending files
+        sendfile_max_chunk 128k;
+        # Send headers in one piece, it is better than sending them one by one,
+        # i.e don't send partial frames, which increases throughput.
+        tcp_nopush on;
+        # Don't wait to send data in keep-alive state,
+        # i.e  don't buffer data sent, good for small data bursts in real time.
+        tcp_nodelay on;
+        types_hash_max_size 2048;
 
-	# MIME Types
-	include global/mime-types.conf;
-	default_type application/octet-stream;
+        ##
+        # Limits & Timeouts
+        ##
+        # How long each connection should stay open for,
+        # i.e server will close connection after this time
+        # -- default: keepalive_timeout 75.
+        keepalive_timeout 5 5;
+        # Number of requests client can make over keep-alive.
+        keepalive_requests 100000;
+        # Allow the server to close connection on non responding client,
+        # this will free up memory.
+        reset_timedout_connection on;
+        # Request timed out -- default 60.
+        # Timeout for reading client request body.
+        # Read timeout for the request body from client.
+        client_body_timeout 5;
+        # Timeout for reading client request header,
+        # i.e how long to wait for the client to send a request header.
+        client_header_timeout 3;
+        # Timeout for transmitting reponse to client.
+        # If client stop responding, free up memory -- default 60
+        send_timeout 30;
+        # Set the maximum allowed size of client request body.
+        # This should be set to the value of files sizes you wish to upload
+        # to the WordPress Media Library. You may also need to change the
+        # values `upload_max_filesize` and `post_max_size` within your php.ini
+        # for the changes to apply.
+        client_max_body_size 64m;
+        # Cache informations about FDs, frequently accessed files.
+        # Can boost performance, but you need to test those values.
+        open_file_cache max=200000 inactive=20s;
+        open_file_cache_valid 30s;
+        open_file_cache_min_uses 2;
+        open_file_cache_errors on;
+        # Buffer size for reading client request header.
+        client_header_buffer_size 1k;
+        # If the request body size is more than the buffer size,
+        # then the entire (or partial)
+        # request body is written into a temporary file.
+        client_body_buffer_size 1K;
+        # Maximum number and size of buffers for large headers
+        # to read from client request.
+        large_client_header_buffers 2 1k;
+        limit_conn_zone $binary_remote_addr zone=slimits:5m;
+        # max connections for session
+        limit_conn slimits 5;
+        # Comment out others, if you need this:
+        #
+        # server_names_hash_bucket_size 64;
+        # server_name_in_redirect off;
+        #
 
-	# Limits & Timeouts
-	include global/limits.conf;
+        ##
+        # MIME Types
+        ##
+        include mime.types;
+        default_type application/octet-stream;
 
-	# Some WP plugins that push large amounts of data via cookies
-	# can cause 500 HTTP errors if these values aren't increased.
-	fastcgi_buffers 16 16k;
-	fastcgi_buffer_size 32k;
+        ##
+        # Logging Settings
+        ##
+        # Basic Logs.
+        # To boost I/O on HDD we can disable access logs.
+        access_log off;
+        # Only log critical errors.
+        error_log /var/log/nginx/error.log crit;
+        # Default basic logging config:
+        # access_log /var/log/nginx/access.log;
+        # error_log /var/log/nginx/error.log;
 
-	# Default Logs
-	error_log /var/log/nginx/error.log warn;
-	access_log /var/log/nginx/access.log;
+        ##
+        # Gzip Settings
+        ##
+        # Reduce the data that needs to be sent over network.
+        # Enable Gzip compression.
+        gzip on;
+        # The level of compression to apply to files.
+        # A higher compression level increases CPU usage.
+        # Level 5 is a happy medium resulting in roughly 75% compression.
+        gzip_comp_level 5;
+        # Compress data, even when the client connects through a proxy.
+        gzip_proxied any;
+        # Allow proxies to cache both compressed and regular version of file.
+        # Avoids clients that don't support Gzip outputting gibberish.
+        gzip_vary on;
+        # Disable Gzip on IE6.
+        gzip_disable msie6;
+        # Don't compress files smaller than x bytes,
+        # as size reduction will be negligible.
+        gzip_min_length 256;
+        gzip_proxied expired no-cache no-store private auth;
+        # Compress the following MIME types.
+        gzip_types
+          text/css
+          text/javascript
+          text/xml
+          text/plain
+          text/x-component
+          text/cache-manifest
+          text/vcard
+          text/vnd.rim.location.xloc
+          text/vtt
+          text/x-cross-domain-policy
+          application/javascript
+          application/x-javascript
+          application/json
+          application/xml
+          application/rss+xml
+          application/atom+xml
+          application/ld+json
+          application/manifest+json
+          application/vnd.geo+json
+          application/vnd.ms-fontobject
+          application/x-font-ttf
+          application/x-web-app-manifest+json
+          application/xhtml+xml
+          font/truetype
+          font/opentype
+          image/bmp
+          image/x-icon
+          image/svg+xml;
+          # MIME type text/html is always compressed by HttpGzipModule,
+          # when enabled.
 
-	# Gzip
-	include global/gzip.conf;
+        ##
+        # PHP-FPM Settings
+        ##
+        # Some WP plugins that push large amounts of data via cookies
+        # can cause 500 HTTP errors if these values aren't increased.
+        fastcgi_buffers 16 16k;
+        fastcgi_buffer_size 32k;
+        # Exposes configured php pool on $upstream variable.
+        include php-pool.conf;
 
-	# exposes configured php pool on $upstream variable
-	include global/php-pool.conf;
+        ##
+        # SSL Settings
+        ##
+        # Dropping SSLv3, ref: BEAST and POODLE attacks.
+        ssl_protocols TLSv1.2 TLSv1.3;
+        # Diffie-Hellman parameter for DHE cipher suites,
+        # recommended >2048 bits.
+        # Generate DH-key: openssl dhparam -out /etc/nginx/dhparam.pem 4096
+        #
+        ssl_dhparam /etc/nginx/dhparam.pem;
+        # Use secure ciphers.
+        ssl_prefer_server_ciphers on;
+        ssl_ciphers ECDHE-RSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-SHA:ECDHE-RSA-AES256-SHA384;
+        ssl_ecdh_curve X25519:prime256v1:secp521r1:secp384r1;
+        # Define the size of the SSL session cache in MBs.
+        ssl_session_cache shared:SSL:10m;
+        # Define the time in minutes to cache SSL sessions.
+        ssl_session_timeout 1h;
+        # Disables session resumption through TLS session tickets.
+        ssl_session_tickets off;
+        # Enables stapling of OCSP responses by the server.
+        ssl_stapling on;
+        # Enables or disables verification of OCSP responses by the server.
+        ssl_stapling_verify on;
+        # For verification to work, the certificate of the server certificate
+        # issuer, the root certificate, and all intermediate certificates should
+        # be configured as trusted using the ssl_trusted_certificate directive.
 
-	# Modules
-	include /etc/nginx/conf.d/*.conf;
+        ##
+        # Security Settings
+        ##
+        # Generic security enhancements. Use https://securityheaders.io to test
+        # and recommend further improvements.
+        # Hide Nginx version in error messages and reponse headers.
+        # Just For Security Reason.
+        server_tokens off;
+        # Use HTTPS exclusively for 1 year, applies to subdomains.
+        add_header Strict-Transport-Security "max-age=31536000; includeSubDomains; preload" always;
+        # Don't allow pages to be rendered in an iframe on external domains.
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        # MIME sniffing prevention.
+        add_header X-Content-Type-Options "nosniff" always;
+        # Enable cross-site scripting filter in supported browsers.
+        add_header X-Xss-Protection "1; mode=block" always;
 
-	# Sites
-	include /etc/nginx/sites-enabled/*;
+        # DNS server
+        resolver 8.8.8.8 8.8.4.4 valid=300s;
+        resolver_timeout 5s;
+
+        ##
+        # Include other parts of config
+        ##
+        # Modules
+        include /etc/nginx/conf.d/*.conf;
+        # Virtual Hosts (Sites/Apps)
+        include /etc/nginx/sites-enabled/*;
+        # Catch All Server Block
+        server {
+          listen 80 default_server;
+          listen [::]:80 default_server;
+          server_name _;
+          return 444;
+        }
 }
+
+
+## ============================================================================
+# Mail Config
+## ----------------------------------------------------------------------------
+##
+
+#mail {
+#       # See sample authentication script at:
+#       # http://wiki.nginx.org/ImapAuthenticateWithApachePhpScript
+#
+#       # auth_http localhost/auth.php;
+#       # pop3_capabilities "TOP" "USER";
+#       # imap_capabilities "IMAP4rev1" "UIDPLUS";
+#
+#       server {
+#               listen     localhost:110;
+#               protocol   pop3;
+#               proxy      on;
+#       }
+#
+#       server {
+#               listen     localhost:143;
+#               protocol   imap;
+#               proxy      on;
+#       }
+#}
