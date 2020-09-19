@@ -1,0 +1,76 @@
+fastcgi_cache_path /var/www/wordpress/lnovus.best/cache levels=1:2 keys_zone=lnovus.best:100m inactive=60m;
+
+
+server {
+	# Ports to listen on, uncomment one.
+	listen 443 ssl http2;
+	listen [::]:443 ssl http2;
+
+	# Server name to listen for
+	server_name lnovus.best;
+	client_max_body_size 64m;
+
+	# Path to document root
+	root /var/www/wordpress/lnovus.best;
+	
+	# Paths to certificate files.
+	ssl_certificate /etc/letsencrypt/live/lnovus.best/fullchain.pem;
+	ssl_certificate_key /etc/letsencrypt/live/lnovus.best/privkey.pem;
+	# For Cloudflare Origin
+	# ssl_client_certificate /etc/ssl/certs/cloudflare.crt;
+
+	# File to be used as index
+	index index.php;
+
+	# Overrides logs defined in nginx.conf, allows per site logs.
+	# access_log /var/www/wp/domain.com/logs/access.log;
+	# error_log /var/www/wp/domain.com/logs/error.log;
+
+	# Default wp server block rules for Exclusions & Static Content
+	include wp-conf.d/exclusions.conf;
+	include wp-conf.d/static-files.conf;
+
+
+	# Fastcgi cache rules
+	include fastcgi-cache.conf;
+
+	location / {
+		try_files $uri $uri/ /index.php?$args;
+	}
+
+	
+	location ~ \.php$ {
+		try_files $uri =404;
+		include fastcgi_params;
+		fastcgi_pass   $upstream;
+		fastcgi_cache_bypass $skip_cache;
+		fastcgi_no_cache $skip_cache;
+		fastcgi_cache lnovus.best;
+		fastcgi_cache_valid 60m;
+	}
+
+
+}
+
+# Redirect http to https
+server {
+	listen 80;
+	listen [::]:80;
+	server_name lnovus.best www.lnovus.best;
+
+	return 301 https://lnovus.best$request_uri;
+}
+
+# Redirect www to non-www
+server {
+	listen 443 ssl http2;
+	listen [::]:443 ssl http2;
+	server_name www.lnovus.best;
+
+
+        ssl_certificate /etc/letsencrypt/live/lnovus.best/fullchain.pem;
+        ssl_certificate_key /etc/letsencrypt/live/lnovus.best/privkey.pem;
+
+
+	return 301 https://lnovus.best$request_uri;
+}
